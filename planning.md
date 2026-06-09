@@ -10,7 +10,7 @@
 ## Domain
 
 ### Things to Do for FREE as a George Mason student
-My domain is about introducing to George Mason student a variety of things they can do and join for free, including exclusive discounts, perks, events, and freebies. George Mason University is a huge commuting university in Fairfax county, VA, as students attend classes and then go home immediately on a daily basis. Thus, they mostly miss any opportunity and priviledge as a George Mason, making these pieces of information hard to obtain.
+My domain is about introducing to George Mason student a variety of things they can do and join for free, including exclusive discounts, perks, events, and freebies. George Mason University is a huge commuter university in Fairfax county, VA, where students attend classes and then go home immediately on a daily basis. Thus, they mostly miss any opportunity and privilege as a George Mason, making these pieces of information hard to obtain.
 
 ---
 
@@ -41,11 +41,11 @@ My domain is about introducing to George Mason student a variety of things they 
      numbers fit the structure of your documents.
      A review-heavy corpus warrants different chunking than a long FAQ. -->
 
-**Chunk size:** 500 tokens.
+**Chunk size:** 256 tokens.
 
-**Overlap:** 50 tokens.
+**Overlap:** 38 tokens (~15%).
 
-**Reasoning:** It is long enough to hold a complete instruction but short enough to keep the embedding vector focused. Since the documents contains long guides with many paragraphs, the chunk size will be measured in tokens instead of characters.
+**Reasoning:** It is long enough to hold a complete instruction but short enough to keep the embedding vector focused. Additionally, `all-MiniLM-L6-v2` accepts at most 256 word-piece tokens and truncates the rest without warning. Since the documents contains long guides with many paragraphs, the chunk size will be measured in tokens instead of characters. Finally, overlap at ~15% (38 tokens) is the standard sweet spot for keeping cross-sentence references intact when a long section gets cut.
 
 ---
 
@@ -61,7 +61,10 @@ My domain is about introducing to George Mason student a variety of things they 
 
 **Top-k:** 5 chunks per query.
 
-**Production tradeoff reflection:** If cost and resource constraints were not a concern in a real-world deployment, I would weigh in accuracy, context length, semantic capability, and latency.
+**Production tradeoff reflection:** If cost and resource constraints were not a concern in a real-world deployment, I would weigh in:
+* Domain-specific accuracy: my corpus is a blend of official prose and informal, student-made documents ("freebies," building-room codes like "HUB 2300," program names like "Mason Day"). With cost no object, fine-tuning a model on GMU-specific Q&A pairs would likely beat any off-the-shelf choice. 
+* Context length: A production model with a 2k+ context window would let me embed an entire program page like Patriot Pantry as one coherent unit, so a query about eligibility and hours and location could be answered from a single vector instead of hoping three chunks all surface. For my prose-heavy sources, this is the upgrade that would matter most.2
+* Dimensions/Storage: premium models output 1,024 to 3,072 dimensions, which is far better semantically but bigger in the vector store. 
 
 ---
 
@@ -102,39 +105,54 @@ My domain is about introducing to George Mason student a variety of things they 
      You can use ASCII art, a Mermaid diagram, or embed a sketch as an image.
      You'll use this diagram as context when prompting AI tools to implement each stage. -->
 ```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  INDEXING PHASE  —  offline, run once (re-run on content refresh)            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+                                 10 raw sources
+            (Google Doc, Reddit thread, GMU dept pages, Mason360 feed)
+                                       |
+                                       v
 +------------------------------------------------------------------------------+
-|                          1. DOCUMENT INGESTION                               |
-|  - Web Scrapers / API Connectors (Requests, BeautifulSoup, Reddit API)       |
-|  - Ingests: GMU Domain Sites, Reddit Threads, City Transit Data, Google Docs |
+|                             DOCUMENT INGESTION                               |
+|  - Web Scrapers/API Connectors (requests/httpx, BeautifulSoup, Reddit API)   |
+|  - Output: clean text + metadata per doc: {source,url,title,doc_type,date}   |
 +------------------------------------------------------------------------------+
                                        |
                                        v
 +------------------------------------------------------------------------------+
-|                               2. CHUNKING                                    |
-|  - Token-Based Text Splitter (RecursiveCharacterTextSplitter via LangChain)  |
-|  - Configuration: Chunk Size = 500 Tokens | Overlap = 50 Tokens              |
+|                                  CHUNKING                                    |
+|  - Token-Based Text Splitter: RecursiveCharacterTextSplitter via LangChain   |
+|  - Configuration: Chunk Size = 256 Tokens | Overlap = 38 Tokens              |
 +------------------------------------------------------------------------------+
                                        |
                                        v
 +------------------------------------------------------------------------------+
-|                        3. EMBEDDING + VECTOR STORE                           |
+|                           EMBEDDING + VECTOR STORE                           |
 |  - Embedding Model: sentence-transformers (all-MiniLM-L6-v2)                 |
-|  - Vector Database: ChromaDB                                                 |
+|  - Vector Database: ChromaDB (384 dimensions)                                |
 +------------------------------------------------------------------------------+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  QUERY PHASE  —  online, per user request                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+                              (Embeded) User query
                                        |
                                        v
 +------------------------------------------------------------------------------+
-|                               4. RETRIEVAL                                   |
+|                                  RETRIEVAL                                   |
 |  - Vector Search: Cosine Similarity Matching on User Queries                 |
 |  - Configuration: Top-k = 5 Chunks (Fetches highest scoring context pieces)  |
 +------------------------------------------------------------------------------+
                                        |
                                        v
 +------------------------------------------------------------------------------+
-|                               5. GENERATION                                  |
+|                                  GENERATION                                  |
 |  - LLM Framework: Groq (llama-3.3-70b-versatile)                             |
-|  - Generation Model: Anthropic Claude 3.5 Sonnet                             |
-|  - Output: Accurately synthesis of free student perks, transit, and events   |
+|  - Grounded prompt: "Answer ONLY from the context below. If absent, say so.  |
+|                      Cite each source."                                      |
+|  - Output: answer + [source: title/url]                                      |
 +------------------------------------------------------------------------------+
 
 ```
@@ -154,7 +172,26 @@ My domain is about introducing to George Mason student a variety of things they 
      with my specified chunk size and overlap" is a plan. -->
 
 **Milestone 3 — Ingestion and chunking:**
+* **AI tool**: Claude
+* **Input**: the [Domain](#domain), the [Documents](#documents), and the [Chunking Strategy](#chunking-strategy) sections of this document, along with the system [Architecture](#architecture).
+* **Prompt**: I'm building a RAG system to make student-generated knowledge searchable and answerable with the scope as described in the Domain section. Help me to implement both Document Ingestion layer and Chunking layer of the attached system architecture, in Python. Ingestion function should collect texts from sources in document table, clean them, and output a list of dictionaries with the following metadata: `{text, source, url, title, doc_type, date}`. Note that each source type needs its own loader (Google Docs export URL, Reddit `.json` endpoint, BeautifulSoup for GMU dept pages). The chunking function must use `RecursiveCharacterTextSplitter` from LangChain. The chunk size must be 256 tokens, with 38 tokens overlapping. After chunking, the metadata remains the same but with one additional field: `chunk_id`.
+* **Expected output**: `ingest.py` consisting of two seperate functions: Document Injection, using appropriate loader per source type and outputing a list of dictionaries with correct metadata, and Document Chunking, using `RecursiveCharacterTextSplitter` with correct chunk size and chunk overlap configuration and outputing a list of chunks with `chunk_id` attached.
+* **Verification method**: run on all 10 sources and verify that: *(a)* every chunk has non-empty `text` and all metadata keys present, *(b)* the `doc_type` value belongs to the approved set, *(c)* no chunk exceeds 256 tokens when re-measured with the `all-MiniLM-L6-v2 tokenizer`, *(d)*  consecutive chunks share overlapping text, and *(e)* each chunk is manually reviewed for any remaining navigation, cookie-banner, or menu content (e.g., "Skip to main content"). Any chunk > 256 tokens or missing field or leftover boilerplate should be treated as a failure.
 
 **Milestone 4 — Embedding and retrieval:**
+* **AI tool**: Claude
+* **Input**: the embedding decision (`all-MiniLM-L6-v2` via `sentence-transformers`, 384-dim), the store decision (ChromaDB), the [Chunking Strategy](#chunking-strategy), and the [Retrieval Approach](#retrieval-approach), along with the system [Architecture](#architecture).
+* **Prompt**: After chunking the documents, implement Embedding + Vector Store layer and Retrieval layer. Use `entence-transformers` (`all-MiniLM-L6-v2`) to embed chunks and these embed vectors on ChromaDB. Use Cosine Similarity Matching for vector retrieval. The retrieval function takes raw user query and the variable `k` with the default value of 5. From the user query, embed it using the previous embedding approach. The function outputs top K results, retrieved from ChromaDB.
+* **Expected output**: `retriever.py` consisting of two seperate functions: Embedding + Vector Store, embedding input chunks using `entence-transformers` and storing them in ChromaDB, and Retrieval, doing cosine similarity search in ChromaDB and retuning the `k` most relevant chunks for a user query, with similarity score and original metadata.
+* **Verification method**: verify that *(a)* `collection.count()` equals number of chunks produced in the Chunking stage, nothing dropped and *(b)* the stored vector dimension is **384**. Additionally, reload the collection from disk in a fresh process and confirm the count stays the same to prove persistence, not just an in-memory store. Finally, use a small set of "golden" queries with a known correct source and verify that *(a)* source appears in the top-k and *(b)* metadata comes back attached (needed downstream for citations). Then, deliberately query something off-domain and confirm the score floor returns few/no chunks instead of 5 weak ones.
 
 **Milestone 5 — Generation and interface:**
+* **AI tool**: Claude and ChatGPT
+* **Input**: the [Evaluation Plan](#evaluation-plan), the [Anticipated Challenges](#anticipated-challenges), the grounded prompt, along with the system [Architecture](#architecture).
+* **Prompt**: Next, implement Generation layer, using Groq's `llama-3.3-70b-versatile` as runtime generation model. This layer takes user query and the retrieved chunks as context, and inject the grounded prompt as provided. Finally, implement a UI for this application, using Gradio UI. This interface receives user prompt and displays LLM's answer. Plus, it should display suggested prompts and sub-topics from the documents. Note that the website must run locally and satisfy all the industry standards.
+* **Expected output**: `generate.py` that formats retrieved chunks into a numbered context block, sends the grounded prompt to `llama-3.3-70b-versatile` via the Groq client, and returns the answer with a deduplicated `[source: title/url]` list built from chunk metadata. `app.py` exposing `POST /` query (body `{query}` → `{answer, sources, retrieved_chunks}`) and a `GET /` serving one HTML page with a text box, a send button, an answer panel, and a visible suggested prompts and sub-topics. Sources from the LLM messages shown as clickable links (the `url` from metadata).
+* **Verification method**: 
+  - **Groundedness probe:** use ChatGPT to generate multiple prompts to pressure-test the system prompt against the grounded prompt, including asking a question whose answer is NOT in the corpus (e.g. "what's the free parking policy?") to confirm it triggers the "If absent, say so" path instead of hallucinating.
+  - **Citation presence + format:** verify that every non-refusal answer ends with at least one `[source: title/url]`, and every cited source maps to a chunk that was actually retrieved (no fabricated URLs).
+  - **No-leakage spot check:** verify a stated fact (a discount %, building name, pantry hours) appears verbatim in a retrieved chunk, proving it came from context, not the Llama model's training data.
+  - **User interface check**: run the website locally, submit a query in the browser, and confirm the answer + clickable sources render without touching the terminal. Additionally, submit an empty query and confirm a graceful message, not a 500.
