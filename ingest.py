@@ -5,12 +5,11 @@ Architecture):
 
     DOCUMENT INGESTION  ->  CHUNKING
 
-  * ingest_documents()  collects raw text from each source using a loader
-                        appropriate to its type (Google Docs export URL,
-                        BeautifulSoup for ordinary HTML pages). Sources that
-                        can't be scraped (blocked hosts or JS-only pages) are
-                        read straight from a stored PDF/snapshot copy. Returns a
-                        list of dicts with metadata:
+  * ingest_documents()  collects raw text from each source. Ordinary web pages
+                        are scraped with BeautifulSoup; sources that can't be
+                        scraped (blocked hosts, JS-only pages, or the Google Doc)
+                        are read straight from a stored PDF/snapshot copy.
+                        Returns a list of dicts with metadata:
                         {text, source, url, title, doc_type, date}.
 
   * chunk_documents()   splits each document's text with LangChain's
@@ -83,24 +82,6 @@ def clean_text(raw):
 # Per-source-type loaders
 # =========================================================================== #
 
-def load_gdoc(url):
-    """Load a shared Google Doc via its plain-text export endpoint.
-
-    A normal doc URL renders as a JavaScript app; the /export?format=txt
-    endpoint returns the document body as plain text, which needs no scraping.
-    """
-    match = re.search(r"/document/d/([a-zA-Z0-9_-]+)", url)
-    if not match:
-        raise ValueError(f"Could not extract Google Doc id from {url!r}")
-    doc_id = match.group(1)
-    export_url = f"https://docs.google.com/document/d/{doc_id}/export?format=txt"
-    resp = requests.get(export_url, headers=config.HEADERS,
-                        timeout=config.REQUEST_TIMEOUT)
-    resp.raise_for_status()
-    resp.encoding = resp.apparent_encoding or "utf-8"
-    return resp.text
-
-
 def load_html(url):
     """Load an ordinary HTML page and extract its main textual content.
 
@@ -159,7 +140,6 @@ def load_snapshot(filename):
 
 
 LOADERS = {
-    "gdoc": load_gdoc,
     "html": load_html,
 }
 
@@ -272,15 +252,26 @@ def chunk_documents(documents, chunk_size=config.CHUNK_SIZE,
                     model_name=config.EMBED_MODEL):
     """Split each document into overlapping token-bounded chunks.
 
+    Most sources use chunk_size/chunk_overlap; a doc_type listed in
+    config.CHUNK_SIZE_OVERRIDES is split finer (e.g. the dense Google Doc), so
+    its short items embed individually instead of being diluted in a large chunk.
+
     Each chunk dict carries the parent's metadata plus a unique `chunk_id`:
         {text, source, url, title, doc_type, date, chunk_id}
     """
-    splitter = _build_splitter(chunk_size, chunk_overlap, model_name)
-    chunks = []
+    splitters = {}
 
+    def splitter_for(doc_type):
+        size = config.CHUNK_SIZE_OVERRIDES.get(doc_type, chunk_size)
+        overlap = config.CHUNK_OVERLAP_OVERRIDES.get(doc_type, chunk_overlap)
+        if (size, overlap) not in splitters:
+            splitters[(size, overlap)] = _build_splitter(size, overlap, model_name)
+        return splitters[(size, overlap)]
+
+    chunks = []
     for doc_index, doc in enumerate(documents):
         doc_slug = f"{doc_index:02d}-{_slugify(doc['title'])}"
-        pieces = splitter.split_text(doc["text"])
+        pieces = splitter_for(doc["doc_type"]).split_text(doc["text"])
         for piece_index, piece in enumerate(pieces):
             piece = piece.strip()
             if not piece:

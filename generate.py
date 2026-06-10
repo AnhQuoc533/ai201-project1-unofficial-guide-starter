@@ -10,7 +10,6 @@ is created lazily so importing this module never requires a key.
 """
 
 import os
-
 import config
 
 _client = None

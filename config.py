@@ -76,12 +76,13 @@ UNUSABLE_MARKERS = [
 # with no live fetch attempted; they need no "loader".
 SOURCES = [
     {
-        "loader": "gdoc",
         "source": "The Mason Everything Doc - Google Docs",
         "title": "The Mason Everything Doc",
         "doc_type": "google_doc",
         "url": "https://docs.google.com/document/d/11A-QRB7bBZ3XX3F3WJ8U0ZRLrEipKoB-9JLFMPf-oKU/",
         "date": "2026-06-09",
+        "pdf": "00-google_doc.pdf",
+        "local_only": True,  # use saved PDF; Google Doc text export retrieved poorly
     },
     {
         "source": "r/EngineeringStudents",
@@ -255,6 +256,14 @@ ARTIFACT_PATTERN = "[" + "".join(
 CHUNK_SIZE = 256     # tokens (all-MiniLM-L6-v2 word-pieces)
 CHUNK_OVERLAP = 38   # tokens (~15%)
 
+# Per-doc_type overrides for sources whose structure needs finer granularity
+# than the default. The Google Doc is a dense bullet list of many short items;
+# at 256 tokens each chunk lumps ~10 items together and dilutes their embeddings,
+# so specific queries (e.g. "Corner Pocket") can't match. Smaller chunks isolate
+# each item. doc_types not listed here use CHUNK_SIZE / CHUNK_OVERLAP.
+CHUNK_SIZE_OVERRIDES = {"google_doc": 80}
+CHUNK_OVERLAP_OVERRIDES = {"google_doc": 12}  # ~15% of 80
+
 # Split preference: paragraph, line, sentence, clause, word, then (last) char,
 # so chunks land on natural boundaries before falling back to hard cuts.
 CHUNK_SEPARATORS = ["\n\n", "\n", ". ", "? ", "! ", "; ", ", ", " ", ""]
@@ -334,6 +343,3 @@ SUBTOPICS = [
     "Free events", "Perks & discounts", "Food support", "Transportation",
     "Athletics", "First-year programs", "Arts & entertainment", "Student email perks",
 ]
-
-SERVER_NAME = "127.0.0.1"
-SERVER_PORT = 7860

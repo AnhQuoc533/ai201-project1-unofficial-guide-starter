@@ -41,11 +41,13 @@ My domain is about introducing to George Mason student a variety of things they 
      numbers fit the structure of your documents.
      A review-heavy corpus warrants different chunking than a long FAQ. -->
 
-**Chunk size:** 256 tokens.
+**Chunk size:** 256 tokens (default), with a per-source override of **80 tokens** for the Mason Everything Doc.
 
-**Overlap:** 38 tokens (~15%).
+**Overlap:** 38 tokens (~15%); 12 tokens (~15%) for the 80-token override.
 
-**Reasoning:** It is long enough to hold a complete instruction but short enough to keep the embedding vector focused. Additionally, `all-MiniLM-L6-v2` accepts at most 256 word-piece tokens and truncates the rest without warning. Since the documents contains long guides with many paragraphs, the chunk size will be measured in tokens instead of characters. Finally, overlap at ~15% (38 tokens) is the standard sweet spot for keeping cross-sentence references intact when a long section gets cut.
+**Reasoning:** 256 tokens is long enough to hold a complete instruction but short enough to keep the embedding vector focused, and `all-MiniLM-L6-v2` accepts at most 256 word-piece tokens and truncates the rest without warning. Most sources are prose guides with many paragraphs, so the chunk size is measured in tokens instead of characters, and ~15% overlap is the standard sweet spot for keeping cross-sentence references intact when a long section gets cut.
+
+**Per-source override (added during implementation):** The Mason Everything Doc is not prose — it is a dense bullet list of many short, independent items (e.g. "Free Play Friday at Corner Pocket... free Fridays 6–11 PM"). At 256 tokens, each chunk lumped ~10 items together and diluted their embeddings, so item-specific queries failed to retrieve the right chunk (the Corner Pocket chunk scored 0.262, below the 0.30 retrieval floor, ranked 14th). Chunking that source at 80 tokens isolates each item; the same chunk then scores 0.519 and ranks 1st. This follows the principle that a list-heavy source warrants finer chunking than a long-form guide. Implemented as `CHUNK_SIZE_OVERRIDES` keyed by `doc_type` in `config.py`.
 
 ---
 
