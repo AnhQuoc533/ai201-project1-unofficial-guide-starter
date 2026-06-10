@@ -12,9 +12,23 @@ env/
 # Jupyter
 .ipynb_checkpoints/
 
+# Tests
+test_*.py
+.pytest_cache/
+
+# Local agent memory (not shared)
+memory/
+
+# Generated pipeline artifacts
+chunks.json
+documents/cleaned/
+
 # ChromaDB local storage
 chroma_db/
 chroma/
 
 # macOS
 .DS_Store
+
+# AI
+.claude/
