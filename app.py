@@ -32,14 +32,6 @@ def ensure_index():
     return retriever.build_vector_store(chunks)
 
 
-def format_sources(sources):
-    """Render deduplicated sources as a markdown list of clickable links."""
-    if not sources:
-        return ""
-    links = "\n".join(f"- [{s['title']}]({s['url']})" for s in sources)
-    return f"**Sources**\n{links}"
-
-
 def chat(message, history):
     """Chat handler used by Gradio's ChatInterface.
 
@@ -49,12 +41,7 @@ def chat(message, history):
     if not message:
         return ""
     chunks = retriever.retrieve(message)
-    result = generate.generate_answer(message, chunks)
-    answer = result.get("answer", "")
-    sources_md = format_sources(result.get("sources", []))
-    if sources_md:
-        return f"{answer}\n\n{sources_md}"
-    return answer
+    return generate.generate_answer(message, chunks)
 
 
 def close_app():
@@ -132,11 +119,9 @@ def build_ui():
 
 if __name__ == "__main__":
     load_dotenv()
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 80)
     print(f"  {config.APP_TITLE} — starting up")
-    print("=" * 50 + "\n")
+    print("=" * 80 + "\n")
     ensure_index()
-    build_ui().launch(theme=gr.themes.Soft(primary_hue="indigo"), 
-                      inbrowser=True
-                      )
+    build_ui().launch(theme=gr.themes.Soft(primary_hue="indigo"), inbrowser=True)
 

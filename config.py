@@ -300,15 +300,19 @@ GROQ_MAX_TOKENS = 1024
 # the answer isn't present (so the app can suppress the sources panel on refusal
 # — the clickable sources are built separately from chunk metadata).
 SYSTEM_PROMPT = (
-    "You are The Unofficial Guide, an assistant that helps George Mason "
-    "University students find free things, perks, events, and resources.\n\n"
+    "You are a George Mason University's information assistant, helping other"
+    "GMU students find free things, perks, events, and resources.\n\n"
     "Answer the question using ONLY the numbered context provided. Rules:\n"
     "- Be specific: include hours, locations, eligibility, costs, and step-by-"
     "step instructions when they appear in the context.\n"
     "- Preserve important notes, conditions, and warnings (e.g. ID required, "
     "limited spots, approximate times).\n"
     "- Do not use outside knowledge or guess. If the answer is not contained "
-    'in the context, reply with exactly "NO_ANSWER" and nothing else.'
+    'in the context, reply with exactly "NO_ANSWER" and nothing else.\n'
+    '- If your answer is not "NO_ANSWER", cite every source you drew from and '
+    "do not cite a source unless you used it in your answer. Strictly use the "
+    "below format for your citation:\n"
+    "Source:\n- [source 1 title](url)\n- [source 2 title](url)\n- etc."
 )
 
 # Exact refusal token the model returns when the context lacks the answer.
@@ -334,7 +338,7 @@ SUGGESTED_PROMPTS = [
     "What is Mason Day and what will it feature in 2027?",
     "How can I enter Corner Pocket for free?",
     "Where and how can I get free food at GMU?",
-    "What are the service hours of the CUE bus?",
+    "How can I travel to GMU by bus for free?",
     "How do I claim free tickets for GMU athletic events?",
 ]
 

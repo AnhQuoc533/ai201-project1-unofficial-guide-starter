@@ -49,7 +49,7 @@ def dedupe_sources(chunks):
     return sources
 
 
-def generate_answer(query, chunks, client=None):
+def generate_answer(query, chunks, client=None, verbose=True):
     """Answer `query` grounded in `chunks`.
 
     Returns {"answer": str, "sources": [{"title", "url"}, ...]}. When no chunks
@@ -57,7 +57,7 @@ def generate_answer(query, chunks, client=None):
     grounded refusal message without calling the model.
     """
     if not chunks:
-        return {"answer": config.NO_CONTEXT_MESSAGE, "sources": []}
+        return config.NO_CONTEXT_MESSAGE
 
     client = client if client is not None else _get_client()
     user_message = (
@@ -78,6 +78,9 @@ def generate_answer(query, chunks, client=None):
     # Model returns the sentinel when the retrieved context doesn't answer the
     # question: surface the refusal with no sources (avoids citing chunks that
     # were retrieved but didn't actually support an answer).
+    if verbose:
+        print(f"Prompt: {user_message}")
+        print(f"Answer: {answer}")
     if answer.strip("'\".").upper() == config.NO_ANSWER_TOKEN:
-        return {"answer": config.NO_CONTEXT_MESSAGE, "sources": []}
-    return {"answer": answer, "sources": dedupe_sources(chunks)}
+        return config.NO_CONTEXT_MESSAGE
+    return answer
