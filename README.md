@@ -16,8 +16,8 @@ My domain is about introducing to George Mason student a variety of things they 
      Be specific: include URLs, subreddit names, forum thread titles, or file names.
      Aim for variety — sources that together cover different subtopics or perspectives. -->
 
-| # | Source | Description | URL  |
-|---|--------|-------------|-----------------|
+| # | Source | <div style="width: 230px;">Description | URL |
+|---|--------|-------------|---|
 | 1 | the mason everything doc - Google Docs| Free things to do around George Mason University (what you are paying with with your tuition) | https://docs.google.com/document/d/11A-QRB7bBZ3XX3F3WJ8U0ZRLrEipKoB-9JLFMPf-oKU/ |
 | 2 | r/EngineeringStudents | Free things you can get with student email | https://www.reddit.com/r/EngineeringStudents/comments/1rphp2z/free_stuff_you_can_claim_with_your_student_email/ |
 | 3 | First-Gen+ Center - GMU | Perks and Discounts for GMU students | https://firstgen.gmu.edu/resources-information/resource-guide-2/perks-discounts/ |
@@ -99,8 +99,8 @@ My domain is about introducing to George Mason student a variety of things they 
      Be honest — a partially accurate or inaccurate result that you explain well is more
      valuable than a suspiciously perfect result. -->
 
-| # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
-|---|----------|-----------------|------------------------------|-------------------|-------------------|
+| # | Question | <div style="width: 280px;">Expected answer</div> | <div style="width: 280px;">System response (summarized)</div> | Retrieval quality | Response accuracy |
+|---|---|---|---|---|---|
 | 1 | What is Mason Day and what will it feature in 2027? | Mason Day is a end-of-year Spring Carnival that combines amusements, rides, games, food, music, and more at GMU. Mason students can join for free with active and valid student ID. Mason Day 2027 will feature a HUGE carnival with rides, games, delicious treats, food trucks, inflatables, novelties, student performances all day. | Mason Day is George Mason's largest and longest-standing tradition, an end-of-year Spring Carnival. In 2027, it will feature a HUGE carnival with rides, games, delicious treats, food trucks, inflatables, novelties, student performances all day, and Mason Day T-shirts and goodies (while supplies last). All events are FREE. The 2027 headliner has not been announced yet. <br>Source:<br>- Mason Day \| https://si.gmu.edu/mason-day/|Relevant|Partially accurate
 | 2 | How can I enter Corner Pocket for free? | Free Play Friday at Corner Pocket: Mason’s mini arcade and games area is free on Fridays from 6-11 PM. | To enter Corner Pocket for free, you can go on Fridays from 6-11 PM, as it is free on Fridays during this time. Corner Pocket is Mason's mini arcade and games area.<br>Source:<br>- [The Mason Everything Doc](https://docs.google.com/document/d/11A-QRB7bBZ3XX3F3WJ8U0ZRLrEipKoB-9JLFMPf-oKU/)|Relevant|Accurate
 | 3 | Where and how can I get free food at GMU? | You can get free food support from the Patriot Pantry. In order to utilize the Patriot Pantry, a student must be a degree-seeking George Mason student enrolled in at least one (1) credit hour in the current/present term. If you are interested in receiving services from the Patriot Pantry, please visit the Patriot Pantry at Fairfax or Patriot Pantry at Mason Square pages depending on the campus you primarily attend to learn more and submit an order form. | You can get free food at the Patriot Pantry, which is located in SUB I on the Fairfax Campus. You can also contact them at [email protected] for questions about services, donating, or volunteering. Additionally, you can check out the Virginia Supplemental Nutrition Assistance Program (SNAP) if the Patriot Pantry is not enough. <br>Source:<br>- [4] (source: Patriot Pantry \| https://ssac.gmu.edu/patriot-pantry)|Relevant|Accurate
